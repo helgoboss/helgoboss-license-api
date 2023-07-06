@@ -20,11 +20,15 @@ pub struct LicenseData {
 /// Serialization and deserialization must be backward-compatible because we persist this on disk!
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Validate, Serialize, Deserialize)]
 pub struct LicensePayloadData {
+    /// License owner name.
     #[validate(length(min = 1))]
     pub name: String,
+    /// License owner email address.
     #[validate(email)]
     pub email: String,
+    /// Kind of license.
     pub kind: LicenseKind,
+    /// Products included in this license.
     #[validate(length(min = 1))]
     #[validate]
     pub products: Vec<LicensedProductData>,
@@ -36,9 +40,12 @@ pub struct LicensePayloadData {
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Validate, Serialize, Deserialize)]
 #[validate(schema(function = "validate_product"))]
 pub struct LicensedProductData {
+    /// Unique product ID.
     #[validate(length(min = 1))]
     pub id: String,
+    /// Minimum licensed version.
     pub min_version: u32,
+    /// Maximum license version (must be greater or equal than `min_version`).
     pub max_version: u32,
 }
 

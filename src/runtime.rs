@@ -26,7 +26,7 @@ pub struct LicensePayload {
 /// Serialization must be deterministic because the signature is built from it!
 ///
 /// Serialization and deserialization must be backward-compatible because we persist this on disk!
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize, clap::ValueEnum)]
 pub enum LicenseKind {
     Personal,
     Business,
