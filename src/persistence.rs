@@ -1,8 +1,10 @@
 use crate::runtime::{License, LicenseKind, LicensePayload, LicensedProduct};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 use validator::{Validate, ValidationError};
+
+/// At the moment, we don't care about distinguishing between different errors.
+type GenericError = anyhow::Error;
 
 /// Data of a license, suitable for being persisted, can be invalid.
 ///
@@ -59,7 +61,7 @@ impl From<License> for LicenseData {
 }
 
 impl TryFrom<LicenseData> for License {
-    type Error = Box<dyn Error>;
+    type Error = GenericError;
 
     fn try_from(data: LicenseData) -> Result<Self, Self::Error> {
         data.validate()?;
@@ -81,7 +83,7 @@ impl From<LicensePayload> for LicensePayloadData {
 }
 
 impl TryFrom<LicensePayloadData> for LicensePayload {
-    type Error = Box<dyn Error>;
+    type Error = GenericError;
 
     fn try_from(data: LicensePayloadData) -> Result<Self, Self::Error> {
         data.validate()?;
@@ -126,7 +128,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn successful_deserialization() -> Result<(), Box<dyn Error>> {
+    fn successful_deserialization() {
         // Given
         let license_data = LicenseData {
             payload: LicensePayloadData {
@@ -142,21 +144,20 @@ mod tests {
             signature: "00010a".to_string(),
         };
         // When
-        let license: License = license_data.try_into()?;
+        let license: License = license_data.try_into().unwrap();
         // Then
         assert_eq!(license.payload().name(), "Joe");
         assert_eq!(license.payload().email(), "joe@example.org");
         assert!(license.payload().created_on() > 0);
         assert_eq!(license.payload().kind(), LicenseKind::Personal);
-        let product = license.payload().products().first().ok_or("no product")?;
+        let product = license.payload().products().first().expect("no product");
         assert_eq!(product.id(), "foo");
         assert_eq!(product.version_range(), 1..=1);
         assert_eq!(license.signature(), &[0x00, 0x01, 0x0a]);
-        Ok(())
     }
 
     #[test]
-    fn failed_deserialization() -> Result<(), Box<dyn Error>> {
+    fn failed_deserialization() {
         // Given
         let license_data = LicenseData {
             payload: LicensePayloadData {
@@ -171,11 +172,10 @@ mod tests {
         let license: Result<License, _> = license_data.try_into();
         // Then
         license.expect_err("should error due to invalid data");
-        Ok(())
     }
 
     #[test]
-    fn successful_serialization() -> Result<(), Box<dyn Error>> {
+    fn successful_serialization() {
         // Given
         let original_license_data = LicenseData {
             payload: LicensePayloadData {
@@ -190,11 +190,10 @@ mod tests {
             },
             signature: "00010a".to_string(),
         };
-        let license: License = original_license_data.clone().try_into()?;
+        let license: License = original_license_data.clone().try_into().unwrap();
         // When
         let serialized_license_data: LicenseData = license.into();
         // Then
         assert_eq!(original_license_data, serialized_license_data);
-        Ok(())
     }
 }
