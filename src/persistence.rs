@@ -10,6 +10,12 @@ type GenericError = anyhow::Error;
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub struct LicenseKey(String);
 
+impl AsRef<str> for LicenseKey {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 /// Data of a license, suitable for being persisted, can be invalid.
 ///
 /// Serialization and deserialization must be backward-compatible because we persist this on disk!
