@@ -1,10 +1,14 @@
 use crate::runtime::{License, LicenseKind, LicensePayload, LicensedProduct};
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use validator::{Validate, ValidationError};
 
 /// At the moment, we don't care about distinguishing between different errors.
 type GenericError = anyhow::Error;
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub struct LicenseKey(String);
 
 /// Data of a license, suitable for being persisted, can be invalid.
 ///
@@ -49,6 +53,26 @@ pub struct LicensedProductData {
     pub min_version: u32,
     /// Maximum license version (must be greater or equal than `min_version`).
     pub max_version: u32,
+}
+
+impl LicenseKey {
+    pub fn new(raw_key: String) -> Self {
+        Self(raw_key)
+    }
+}
+
+impl LicenseData {
+    pub fn from_key(key: &LicenseKey) -> anyhow::Result<Self> {
+        let bytes = base64::engine::general_purpose::STANDARD.decode(&key.0)?;
+        let data = serde_json::from_slice(&bytes)?;
+        Ok(data)
+    }
+
+    pub fn to_key(&self) -> LicenseKey {
+        let bytes = serde_json::to_vec(self).unwrap();
+        let raw_key = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        LicenseKey(raw_key)
+    }
 }
 
 impl From<License> for LicenseData {
@@ -126,6 +150,52 @@ fn validate_product(product: &LicensedProductData) -> Result<(), ValidationError
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn to_key() {
+        // Given
+        let license_data = LicenseData {
+            payload: LicensePayloadData {
+                name: "Joe".to_string(),
+                email: "joe@example.org".to_string(),
+                kind: LicenseKind::Personal,
+                products: vec![LicensedProductData {
+                    id: "foo".to_string(),
+                    min_version: 1,
+                    max_version: 1,
+                }],
+            },
+            signature: "00010a".to_string(),
+        };
+        // When
+        let key = license_data.to_key();
+        // Then
+        assert_eq!(&key.0, "eyJwYXlsb2FkIjp7Im5hbWUiOiJKb2UiLCJlbWFpbCI6ImpvZUBleGFtcGxlLm9yZyIsImtpbmQiOiJQZXJzb25hbCIsInByb2R1Y3RzIjpbeyJpZCI6ImZvbyIsIm1pbl92ZXJzaW9uIjoxLCJtYXhfdmVyc2lvbiI6MX1dfSwic2lnbmF0dXJlIjoiMDAwMTBhIn0=");
+    }
+
+    #[test]
+    fn from_key() {
+        // Given
+        let key = LicenseKey("eyJwYXlsb2FkIjp7Im5hbWUiOiJKb2UiLCJlbWFpbCI6ImpvZUBleGFtcGxlLm9yZyIsImtpbmQiOiJQZXJzb25hbCIsInByb2R1Y3RzIjpbeyJpZCI6ImZvbyIsIm1pbl92ZXJzaW9uIjoxLCJtYXhfdmVyc2lvbiI6MX1dfSwic2lnbmF0dXJlIjoiMDAwMTBhIn0=".to_string());
+        // When
+        let license_data = LicenseData::from_key(&key).unwrap();
+        // Then
+        let expected_license_data = LicenseData {
+            payload: LicensePayloadData {
+                name: "Joe".to_string(),
+                email: "joe@example.org".to_string(),
+                kind: LicenseKind::Personal,
+                products: vec![LicensedProductData {
+                    id: "foo".to_string(),
+                    min_version: 1,
+                    max_version: 1,
+                }],
+            },
+            signature: "00010a".to_string(),
+        };
+        // Then
+        assert_eq!(license_data, expected_license_data);
+    }
 
     #[test]
     fn successful_deserialization() {
