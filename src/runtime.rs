@@ -111,8 +111,8 @@ mod tests {
             }],
         };
         // When
-        let json_1 = serde_json::to_string(&payload)?;
-        let json_2 = serde_json::to_string(&payload)?;
+        let json_1 = rmp_serde::to_vec_named(&payload)?;
+        let json_2 = rmp_serde::to_vec_named(&payload)?;
         // Then
         assert_eq!(json_1, json_2);
         Ok(())

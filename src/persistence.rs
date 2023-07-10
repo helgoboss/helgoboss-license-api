@@ -16,7 +16,7 @@ impl AsRef<str> for LicenseKey {
     }
 }
 
-/// Data of a license, suitable for being persisted, can be invalid.
+/// Complete license data, suitable for being persisted, can be invalid.
 ///
 /// Serialization and deserialization must be backward-compatible because we persist this on disk!
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Validate, Serialize, Deserialize)]
@@ -70,12 +70,12 @@ impl LicenseKey {
 impl LicenseData {
     pub fn from_key(key: &LicenseKey) -> anyhow::Result<Self> {
         let bytes = base64::engine::general_purpose::STANDARD.decode(&key.0)?;
-        let data = serde_json::from_slice(&bytes)?;
+        let data = rmp_serde::from_slice(&bytes)?;
         Ok(data)
     }
 
     pub fn to_key(&self) -> LicenseKey {
-        let bytes = serde_json::to_vec(self).unwrap();
+        let bytes = rmp_serde::to_vec_named(self).unwrap();
         let raw_key = base64::engine::general_purpose::STANDARD.encode(&bytes);
         LicenseKey(raw_key)
     }
@@ -176,13 +176,13 @@ mod tests {
         // When
         let key = license_data.to_key();
         // Then
-        assert_eq!(&key.0, "eyJwYXlsb2FkIjp7Im5hbWUiOiJKb2UiLCJlbWFpbCI6ImpvZUBleGFtcGxlLm9yZyIsImtpbmQiOiJQZXJzb25hbCIsInByb2R1Y3RzIjpbeyJpZCI6ImZvbyIsIm1pbl92ZXJzaW9uIjoxLCJtYXhfdmVyc2lvbiI6MX1dfSwic2lnbmF0dXJlIjoiMDAwMTBhIn0=");
+        assert_eq!(&key.0, "gqdwYXlsb2FkhKRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=");
     }
 
     #[test]
     fn from_key() {
         // Given
-        let key = LicenseKey("eyJwYXlsb2FkIjp7Im5hbWUiOiJKb2UiLCJlbWFpbCI6ImpvZUBleGFtcGxlLm9yZyIsImtpbmQiOiJQZXJzb25hbCIsInByb2R1Y3RzIjpbeyJpZCI6ImZvbyIsIm1pbl92ZXJzaW9uIjoxLCJtYXhfdmVyc2lvbiI6MX1dfSwic2lnbmF0dXJlIjoiMDAwMTBhIn0=".to_string());
+        let key = LicenseKey("gqdwYXlsb2FkhKRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=".to_string());
         // When
         let license_data = LicenseData::from_key(&key).unwrap();
         // Then
