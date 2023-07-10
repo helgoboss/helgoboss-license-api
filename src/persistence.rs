@@ -1,4 +1,5 @@
 use crate::runtime::{License, LicenseKind, LicensePayload, LicensedProduct};
+use base64::engine::general_purpose::URL_SAFE as BASE_64_ENGINE;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
@@ -70,14 +71,14 @@ impl LicenseKey {
 
 impl LicenseData {
     pub fn try_from_key(key: &LicenseKey) -> anyhow::Result<Self> {
-        let bytes = base64::engine::general_purpose::STANDARD.decode(&key.0)?;
+        let bytes = BASE_64_ENGINE.decode(&key.0)?;
         let data = rmp_serde::from_slice(&bytes)?;
         Ok(data)
     }
 
     pub fn to_key(&self) -> LicenseKey {
         let bytes = rmp_serde::to_vec_named(self).unwrap();
-        let raw_key = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        let raw_key = BASE_64_ENGINE.encode(&bytes);
         LicenseKey(raw_key)
     }
 }
@@ -86,7 +87,7 @@ impl From<License> for LicenseData {
     fn from(value: License) -> Self {
         Self {
             payload: LicensePayloadData::from(value.payload().clone()),
-            signature: base64::engine::general_purpose::STANDARD.encode(value.signature()),
+            signature: BASE_64_ENGINE.encode(value.signature()),
         }
     }
 }
@@ -97,7 +98,7 @@ impl TryFrom<LicenseData> for License {
     fn try_from(data: LicenseData) -> Result<Self, Self::Error> {
         data.validate()?;
         let payload = LicensePayload::try_from(data.payload)?;
-        let signature = base64::engine::general_purpose::STANDARD.decode(data.signature)?;
+        let signature = BASE_64_ENGINE.decode(data.signature)?;
         Ok(License::new(payload, signature))
     }
 }
