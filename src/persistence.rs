@@ -1,5 +1,5 @@
 use crate::runtime::{License, LicenseKind, LicensePayload, LicensedProduct};
-use base64::engine::general_purpose::URL_SAFE as BASE_64_ENGINE;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD as BASE_64_ENGINE;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
@@ -180,13 +180,13 @@ mod tests {
         // When
         let key = license_data.to_key();
         // Then
-        assert_eq!(&key.0, "gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=");
+        assert_eq!(&key.0, "gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE");
     }
 
     #[test]
     fn from_key() {
         // Given
-        let key = LicenseKey("gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=".to_string());
+        let key = LicenseKey("gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE".to_string());
         // When
         let license_data = LicenseData::try_from_key(&key).unwrap();
         // Then
@@ -223,7 +223,7 @@ mod tests {
                     max_version: 1,
                 }],
             },
-            signature: "aGVsbG8=".to_string(),
+            signature: "aGVsbG8".to_string(),
         };
         // When
         let license = License::try_from(license_data).unwrap();
@@ -271,7 +271,7 @@ mod tests {
                     max_version: 1,
                 }],
             },
-            signature: "aGVsbG8=".to_string(),
+            signature: "aGVsbG8".to_string(),
         };
         let license = License::try_from(original_license_data.clone()).unwrap();
         // When
