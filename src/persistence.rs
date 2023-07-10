@@ -68,7 +68,7 @@ impl LicenseKey {
 }
 
 impl LicenseData {
-    pub fn from_key(key: &LicenseKey) -> anyhow::Result<Self> {
+    pub fn try_from_key(key: &LicenseKey) -> anyhow::Result<Self> {
         let bytes = base64::engine::general_purpose::STANDARD.decode(&key.0)?;
         let data = rmp_serde::from_slice(&bytes)?;
         Ok(data)
@@ -184,7 +184,7 @@ mod tests {
         // Given
         let key = LicenseKey("gqdwYXlsb2FkhKRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=".to_string());
         // When
-        let license_data = LicenseData::from_key(&key).unwrap();
+        let license_data = LicenseData::try_from_key(&key).unwrap();
         // Then
         let expected_license_data = LicenseData {
             payload: LicensePayloadData {
