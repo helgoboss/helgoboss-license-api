@@ -85,7 +85,7 @@ impl From<License> for LicenseData {
     fn from(value: License) -> Self {
         Self {
             payload: LicensePayloadData::from(value.payload().clone()),
-            signature: hex::encode(value.signature()),
+            signature: base64::engine::general_purpose::STANDARD.encode(value.signature()),
         }
     }
 }
@@ -96,7 +96,7 @@ impl TryFrom<LicenseData> for License {
     fn try_from(data: LicenseData) -> Result<Self, Self::Error> {
         data.validate()?;
         let payload = LicensePayload::try_from(data.payload)?;
-        let signature = hex::decode(data.signature)?;
+        let signature = base64::engine::general_purpose::STANDARD.decode(data.signature)?;
         Ok(License::new(payload, signature))
     }
 }
@@ -217,7 +217,7 @@ mod tests {
                     max_version: 1,
                 }],
             },
-            signature: "00010a".to_string(),
+            signature: "aGVsbG8=".to_string(),
         };
         // When
         let license = License::try_from(license_data).unwrap();
@@ -229,7 +229,7 @@ mod tests {
         let product = license.payload().products().first().expect("no product");
         assert_eq!(product.id(), "foo");
         assert_eq!(product.version_range(), 1..=1);
-        assert_eq!(license.signature(), &[0x00, 0x01, 0x0a]);
+        assert_eq!(license.signature(), b"hello");
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod tests {
                     max_version: 1,
                 }],
             },
-            signature: "00010a".to_string(),
+            signature: "aGVsbG8=".to_string(),
         };
         let license = License::try_from(original_license_data.clone()).unwrap();
         // When
