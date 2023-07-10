@@ -1,7 +1,6 @@
 use crate::runtime::{License, LicenseKind, LicensePayload, LicensedProduct};
 use base64::Engine;
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 use validator::{Validate, ValidationError};
 
 /// At the moment, we don't care about distinguishing between different errors.
@@ -40,6 +39,8 @@ pub struct LicensePayloadData {
     pub email: String,
     /// Kind of license.
     pub kind: LicenseKind,
+    /// Unix timestamp (seconds since 1970-01-01 00:00:00).
+    pub created_on: u64,
     /// Products included in this license.
     #[validate(length(min = 1))]
     #[validate]
@@ -107,6 +108,7 @@ impl From<LicensePayload> for LicensePayloadData {
             name: value.name,
             email: value.email,
             kind: value.kind,
+            created_on: value.created_on,
             products: value.products.into_iter().map(|p| p.into()).collect(),
         }
     }
@@ -121,7 +123,7 @@ impl TryFrom<LicensePayloadData> for LicensePayload {
             name: data.name,
             email: data.email,
             kind: data.kind,
-            created_on: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+            created_on: data.created_on,
             products: data
                 .products
                 .into_iter()
@@ -165,6 +167,7 @@ mod tests {
                 name: "Joe".to_string(),
                 email: "joe@example.org".to_string(),
                 kind: LicenseKind::Personal,
+                created_on: 0,
                 products: vec![LicensedProductData {
                     id: "foo".to_string(),
                     min_version: 1,
@@ -176,13 +179,13 @@ mod tests {
         // When
         let key = license_data.to_key();
         // Then
-        assert_eq!(&key.0, "gqdwYXlsb2FkhKRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=");
+        assert_eq!(&key.0, "gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=");
     }
 
     #[test]
     fn from_key() {
         // Given
-        let key = LicenseKey("gqdwYXlsb2FkhKRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=".to_string());
+        let key = LicenseKey("gqdwYXlsb2FkhaRuYW1lo0pvZaVlbWFpbK9qb2VAZXhhbXBsZS5vcmeka2luZKhQZXJzb25hbKpjcmVhdGVkX29uAKhwcm9kdWN0c5GDomlko2Zvb6ttaW5fdmVyc2lvbgGrbWF4X3ZlcnNpb24BqXNpZ25hdHVyZaYwMDAxMGE=".to_string());
         // When
         let license_data = LicenseData::try_from_key(&key).unwrap();
         // Then
@@ -191,6 +194,7 @@ mod tests {
                 name: "Joe".to_string(),
                 email: "joe@example.org".to_string(),
                 kind: LicenseKind::Personal,
+                created_on: 0,
                 products: vec![LicensedProductData {
                     id: "foo".to_string(),
                     min_version: 1,
@@ -211,6 +215,7 @@ mod tests {
                 name: "Joe".to_string(),
                 email: "joe@example.org".to_string(),
                 kind: LicenseKind::Personal,
+                created_on: 0,
                 products: vec![LicensedProductData {
                     id: "foo".to_string(),
                     min_version: 1,
@@ -224,7 +229,6 @@ mod tests {
         // Then
         assert_eq!(license.payload().name(), "Joe");
         assert_eq!(license.payload().email(), "joe@example.org");
-        assert!(license.payload().created_on() > 0);
         assert_eq!(license.payload().kind(), LicenseKind::Personal);
         let product = license.payload().products().first().expect("no product");
         assert_eq!(product.id(), "foo");
@@ -240,6 +244,7 @@ mod tests {
                 name: "Joe".to_string(),
                 email: "joe".to_string(),
                 kind: LicenseKind::Personal,
+                created_on: 0,
                 products: vec![],
             },
             signature: "".to_string(),
@@ -258,6 +263,7 @@ mod tests {
                 name: "Joe".to_string(),
                 email: "joe@example.org".to_string(),
                 kind: LicenseKind::Personal,
+                created_on: 0,
                 products: vec![LicensedProductData {
                     id: "foo".to_string(),
                     min_version: 1,
