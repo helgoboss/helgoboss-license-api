@@ -84,7 +84,7 @@ impl LicenseData {
 impl From<License> for LicenseData {
     fn from(value: License) -> Self {
         Self {
-            payload: value.payload().clone().into(),
+            payload: LicensePayloadData::from(value.payload().clone()),
             signature: hex::encode(value.signature()),
         }
     }
@@ -95,7 +95,7 @@ impl TryFrom<LicenseData> for License {
 
     fn try_from(data: LicenseData) -> Result<Self, Self::Error> {
         data.validate()?;
-        let payload = data.payload.try_into()?;
+        let payload = LicensePayload::try_from(data.payload)?;
         let signature = hex::decode(data.signature)?;
         Ok(License::new(payload, signature))
     }
@@ -220,7 +220,7 @@ mod tests {
             signature: "00010a".to_string(),
         };
         // When
-        let license: License = license_data.try_into().unwrap();
+        let license = License::try_from(license_data).unwrap();
         // Then
         assert_eq!(license.payload().name(), "Joe");
         assert_eq!(license.payload().email(), "joe@example.org");
@@ -245,7 +245,7 @@ mod tests {
             signature: "".to_string(),
         };
         // When
-        let license: Result<License, _> = license_data.try_into();
+        let license = License::try_from(license_data);
         // Then
         license.expect_err("should error due to invalid data");
     }
@@ -266,7 +266,7 @@ mod tests {
             },
             signature: "00010a".to_string(),
         };
-        let license: License = original_license_data.clone().try_into().unwrap();
+        let license = License::try_from(original_license_data.clone()).unwrap();
         // When
         let serialized_license_data: LicenseData = license.into();
         // Then
